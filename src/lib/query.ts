@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 
 export type ConfigType =
   | "user"
@@ -16,10 +17,17 @@ export interface ConfigFile {
   exists: boolean;
 }
 
+export interface ClaudeSettings {
+  model?: string;
+  permissions?: Record<string, any>;
+  env?: Record<string, string>;
+  [key: string]: any;
+}
+
 export interface ConfigStore {
   name: string;
   created_at: number;
-  settings: unknown;
+  settings: ClaudeSettings;
   using: boolean;
 }
 
@@ -45,8 +53,12 @@ export const useWriteConfigFile = () => {
     mutationFn: ({ configType, content }: { configType: ConfigType; content: unknown }) =>
       invoke<void>("write_config_file", { configType, content }),
     onSuccess: (_, variables) => {
+      toast.success(`Configuration "${variables.configType}" saved successfully`);
       queryClient.invalidateQueries({ queryKey: ["config-file", variables.configType] });
       queryClient.invalidateQueries({ queryKey: ["config-files"] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to save configuration: ${error.message}`);
     },
   });
 };
@@ -55,20 +67,26 @@ export const useWriteConfigFile = () => {
 export const useBackupClaudeConfigs = () => {
   return useMutation({
     mutationFn: () => invoke<void>("backup_claude_configs"),
+    onSuccess: () => {
+      toast.success("Claude configurations backed up successfully");
+    },
+    onError: (error) => {
+      toast.error(`Failed to backup configurations: ${error.message}`);
+    },
   });
 };
 
 // Store management hooks
 
 export const useStores = () => {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: ["stores"],
     queryFn: () => invoke<ConfigStore[]>("get_stores"),
   });
 };
 
 export const useCurrentStore = () => {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: ["current-store"],
     queryFn: () => invoke<ConfigStore | null>("get_current_store"),
   });
@@ -80,9 +98,13 @@ export const useCreateStore = () => {
   return useMutation({
     mutationFn: ({ name, settings }: { name: string; settings: unknown }) =>
       invoke<ConfigStore>("create_store", { name, settings }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      toast.success(`Store "${variables.name}" created successfully`);
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["current-store"] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to create store: ${error.message}`);
     },
   });
 };
@@ -92,9 +114,13 @@ export const useDeleteStore = () => {
 
   return useMutation({
     mutationFn: (name: string) => invoke<void>("delete_store", { name }),
-    onSuccess: () => {
+    onSuccess: (_, name) => {
+      toast.success(`Store "${name}" deleted successfully`);
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["current-store"] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete store: ${error.message}`);
     },
   });
 };
@@ -104,10 +130,14 @@ export const useSetUsingStore = () => {
 
   return useMutation({
     mutationFn: (name: string) => invoke<void>("set_using_store", { name }),
-    onSuccess: () => {
+    onSuccess: (_, name) => {
+      toast.success(`Switched to store "${name}"`);
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["current-store"] });
       queryClient.invalidateQueries({ queryKey: ["config-file", "user"] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to switch store: ${error.message}`);
     },
   });
 };
