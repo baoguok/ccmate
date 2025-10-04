@@ -408,3 +408,64 @@ pub async fn get_store(store_id: String) -> Result<ConfigStore, String> {
         .find(|store| store.id == store_id)
         .ok_or_else(|| format!("Store with id '{}' not found", store_id))
 }
+
+#[tauri::command]
+pub async fn update_store(store_id: String, name: String, settings: Value) -> Result<ConfigStore, String> {
+    let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
+    let app_config_path = home_dir.join(APP_CONFIG_DIR);
+    let stores_file = app_config_path.join("stores.json");
+
+    if !stores_file.exists() {
+        return Err("Stores file does not exist".to_string());
+    }
+
+    // Read existing stores
+    let content = std::fs::read_to_string(&stores_file)
+        .map_err(|e| format!("Failed to read stores file: {}", e))?;
+
+    let mut stores: HashMap<String, ConfigStore> = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse stores file: {}", e))?;
+
+    // Find the store by ID
+    let (old_name, mut store) = stores
+        .iter()
+        .find(|(_, store)| store.id == store_id)
+        .map(|(name, store)| (name.clone(), store.clone()))
+        .ok_or_else(|| format!("Store with id '{}' not found", store_id))?;
+
+    // If name changed, check if new name already exists
+    if old_name != name && stores.contains_key(&name) {
+        return Err("Store with this name already exists".to_string());
+    }
+
+    // Update the store
+    store.name = name.clone();
+    store.settings = settings;
+
+    // If name changed, remove old entry
+    if old_name != name {
+        stores.remove(&old_name);
+    }
+
+    // Insert updated store
+    stores.insert(name.clone(), store.clone());
+
+    // If this store is currently in use, also update the user's settings.json
+    if store.using {
+        let user_settings_path = home_dir.join(".claude/settings.json");
+        let json_content = serde_json::to_string_pretty(&store.settings)
+            .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+
+        std::fs::write(&user_settings_path, json_content)
+            .map_err(|e| format!("Failed to write user settings: {}", e))?;
+    }
+
+    // Write back to stores file
+    let json_content = serde_json::to_string_pretty(&stores)
+        .map_err(|e| format!("Failed to serialize stores: {}", e))?;
+
+    std::fs::write(&stores_file, json_content)
+        .map_err(|e| format!("Failed to write stores file: {}", e))?;
+
+    Ok(store)
+}

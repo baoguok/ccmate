@@ -168,3 +168,24 @@ export const useSetCurrentStore = () => {
     },
   });
 };
+
+export const useUpdateStore = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ storeId, name, settings }: { storeId: string; name: string; settings: unknown }) =>
+      invoke<ConfigStore>("update_store", { storeId, name, settings }),
+    onSuccess: (data) => {
+      toast.success(`Store "${data.name}" saved successfully`);
+      queryClient.invalidateQueries({ queryKey: ["stores"] });
+      queryClient.invalidateQueries({ queryKey: ["store", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["current-store"] });
+      if (data.using) {
+        queryClient.invalidateQueries({ queryKey: ["config-file", "user"] });
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to save store: ${error.message}`);
+    },
+  });
+};

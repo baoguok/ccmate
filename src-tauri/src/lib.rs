@@ -30,6 +30,7 @@ pub fn run() {
             get_stores,
             get_store,
             create_store,
+            update_store,
             delete_store,
             set_using_store,
             get_current_store

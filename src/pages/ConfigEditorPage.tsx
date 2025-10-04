@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { set, get, transform, isEmpty, isPlainObject } from "lodash-es";
-import { useStore } from "../lib/query";
+import { useStore, useUpdateStore } from "../lib/query";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeftIcon } from "lucide-react";
 
@@ -561,8 +561,8 @@ const fields: SectionConfig[] = [
 export function ConfigEditorPage() {
   const { storeId } = useParams();
 
-  console.log(storeId);
   const storeQuery = useStore(storeId!);
+  const updateStore = useUpdateStore();
 
   const storeData = storeQuery.data;
 
@@ -577,24 +577,32 @@ export function ConfigEditorPage() {
     });
   });
 
-  const { register, control, watch } = useForm({ defaultValues });
+  const { register, control, handleSubmit } = useForm({ defaultValues });
 
-  // Watch all form values and convert to nested JSON
-  const formValues = watch();
-  
-  // Log the combined JSON whenever it changes
-  useEffect(() => {
-    const combinedJSON = convertToNestedJSON(formValues);
-    console.log('Combined JSON:', JSON.stringify(combinedJSON, null, 2));
-  }, [formValues]);
+  const onSave = handleSubmit((formValues) => {
+    const { configName, ...rest } = convertToNestedJSON(formValues);
+    updateStore.mutate({
+      storeId: storeId!,
+      name: configName,
+      settings: rest["settings.json"]
+    });
+  });
 
   return (
     <div className="space-y-4">
-      <nav className="px-2 pt-4">
+      <nav className="px-2 pt-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-1 cursor-default hover:bg-zinc-50/50 rounded-lg p-2">
           <ChevronLeftIcon size={14} className="text-muted-foreground" />
           <span className="text-muted-foreground text-xs">所有配置</span>
         </Link>
+        <Button 
+          onClick={onSave} 
+          disabled={updateStore.isPending}
+          size="sm"
+          className="mr-2"
+        >
+          {updateStore.isPending ? "保存中..." : "保存"}
+        </Button>
       </nav>
 
       <section className="px-8">
