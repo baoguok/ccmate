@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { useState, useEffect, useRef } from "react";
 
 type FieldConfig = {
@@ -643,10 +644,17 @@ export function ConfigEditorPage() {
   });
 
   const onDelete = async () => {
-    await deleteStore.mutateAsync({
-      storeId: storeId!,
-    });
-    navigate("/");
+    const confirmed = await ask(
+      `确定要删除配置 "${storeData.title}" 吗？此操作无法撤销。`,
+      { title: "删除配置", kind: "warning" }
+    );
+
+    if (confirmed) {
+      await deleteStore.mutateAsync({
+        storeId: storeId!,
+      });
+      navigate("/");
+    }
   };
 
   return (
