@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "cc-config",
+  "productName": "CC Mate",
   "version": "0.1.0",
   "identifier": "org.randynamic.ccconfig",
   "build": {
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "cc-config",
+        "title": "CC Mate",
         "width": 800,
         "height": 600,
         "minWidth": 800,

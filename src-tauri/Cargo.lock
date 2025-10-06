@@ -451,7 +451,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cc-config"
+name = "cc-mate"
 version = "0.1.0"
 dependencies = [
  "chrono",

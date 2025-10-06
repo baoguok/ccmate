@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ChevronLeftIcon, TrashIcon, ZapIcon } from "lucide-react";
+import { ChevronLeftIcon, PlusIcon, TrashIcon, ZapIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -780,7 +780,7 @@ export function ConfigEditorPage() {
                                 size="sm"
                                 className="h-7 w-7 p-0 shrink-0"
                               >
-                                <ZapIcon className="h-3.5 w-3.5" />
+                                <PlusIcon className="h-3.5 w-3.5" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">

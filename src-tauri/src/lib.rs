@@ -27,6 +27,11 @@ pub fn run() {
                 .accelerator("CmdOrCtrl+Shift+O")
                 .build(app)?;
 
+            // Custom minimize item for Cmd+W
+            let minimize_item = MenuItemBuilder::with_id("minimize_window", "Minimize")
+                .accelerator("Cmd+W")
+                .build(app)?;
+
             let separator = PredefinedMenuItem::separator(app)?;
 
             // App menu (macOS)
@@ -40,7 +45,9 @@ pub fn run() {
                 .item(&PredefinedMenuItem::hide_others(app, None)?)
                 .item(&PredefinedMenuItem::show_all(app, None)?)
                 .item(&separator)
-                .item(&PredefinedMenuItem::quit(app, Some(&app_name))?)
+                .item(&MenuItemBuilder::with_id("quit", format!("Quit {}", app_name))
+                    .accelerator("CmdOrCtrl+Q")
+                    .build(app)?)
                 .build()?;
 
             // File menu
@@ -64,6 +71,7 @@ pub fn run() {
 
             // Window menu
             let window_menu = SubmenuBuilder::new(app, "Window")
+                .item(&minimize_item)
                 .item(&PredefinedMenuItem::minimize(app, None)?)
                 .item(&separator)
                 .item(&PredefinedMenuItem::fullscreen(app, None)?)
@@ -84,7 +92,8 @@ pub fn run() {
             app.set_menu(menu)?;
 
             // Handle menu events
-            app.on_menu_event(|_app_handle, event| {
+            app.on_menu_event(|app_handle, event| {
+                use tauri::Manager;
                 match event.id().0.as_str() {
                     "open_config_path" => {
                         tauri::async_runtime::spawn(async move {
@@ -92,6 +101,14 @@ pub fn run() {
                                 eprintln!("Failed to open config path: {}", e);
                             }
                         });
+                    }
+                    "minimize_window" => {
+                        if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.hide();
+                        }
+                    }
+                    "quit" => {
+                        app_handle.exit(0);
                     }
                     _ => {}
                 }
@@ -124,6 +141,34 @@ pub fn run() {
             get_current_store,
             open_config_path
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .on_window_event(|window, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // Prevent the window from closing and hide it instead
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
+        .on_page_load(|window, _| {
+            #[cfg(target_os = "macos")]
+            {
+                // Ensure window is shown when page loads
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            use tauri::Manager;
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                // Handle dock icon click - show and focus the main window
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        });
 }
