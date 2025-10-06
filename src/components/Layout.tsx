@@ -6,6 +6,19 @@ import { FileJsonIcon, SettingsIcon } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { UpdateButton } from "./UpdateButton";
 
+const navLinks = [
+  {
+    to: "/",
+    icon: FileJsonIcon,
+    label: "配置"
+  },
+  {
+    to: "/settings",
+    icon: SettingsIcon,
+    label: "设置"
+  }
+]
+
 export function Layout() {
   const { t } = useTranslation();
 
