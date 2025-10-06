@@ -18,9 +18,9 @@ function ConfigStores() {
   const { data: stores } = useStores();
   const setCurrentStoreMutation = useSetCurrentStore();
   const navigate = useNavigate();
-  const handleStoreClick = (storeName: string, isCurrentStore: boolean) => {
+  const handleStoreClick = (storeId: string, isCurrentStore: boolean) => {
     if (!isCurrentStore) {
-      setCurrentStoreMutation.mutate(storeName);
+      setCurrentStoreMutation.mutate(storeId);
     }
   };
 
@@ -28,7 +28,7 @@ function ConfigStores() {
 
   const onCreateStore = async () => {
     const store = await createStoreMutation.mutateAsync({
-      name: "新配置",
+      title: "新配置",
       settings: {},
     });
     navigate(`/edit/${store.id}`);
@@ -59,14 +59,14 @@ function ConfigStores() {
           return (
             <div
               role="button"
-              key={store.name}
-              onClick={() => handleStoreClick(store.name, isCurrentStore)}
+              key={store.id}
+              onClick={() => handleStoreClick(store.id, isCurrentStore)}
               className={cn("border rounded-xl p-3 h-[100px] flex flex-col justify-between transition-colors disabled:opacity-50", {
                 "bg-primary/10 border-primary border-2": isCurrentStore,
               })}
             >
               <div>
-                {store.name}
+                {store.title}
               </div>
 
               <div className="flex justify-end">

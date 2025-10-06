@@ -27,8 +27,8 @@ export interface ClaudeSettings {
 
 export interface ConfigStore {
   id: string; // nanoid(6)
-  name: string;
-  created_at: number;
+  title: string;
+  createdAt: number;
   settings: ClaudeSettings;
   using: boolean;
 }
@@ -60,7 +60,8 @@ export const useWriteConfigFile = () => {
       queryClient.invalidateQueries({ queryKey: ["config-files"] });
     },
     onError: (error) => {
-      toast.error(`Failed to save configuration: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to save configuration: ${errorMessage}`);
     },
   });
 };
@@ -73,7 +74,8 @@ export const useBackupClaudeConfigs = () => {
       toast.success("Claude configurations backed up successfully");
     },
     onError: (error) => {
-      toast.error(`Failed to backup configurations: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to backup configurations: ${errorMessage}`);
     },
   });
 };
@@ -108,17 +110,18 @@ export const useCreateStore = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, settings }: { name: string; settings: unknown }) => {
+    mutationFn: async ({ title, settings }: { title: string; settings: unknown }) => {
       const id = nanoid(6);
-      return invoke<ConfigStore>("create_store", { id, name, settings });
+      return invoke<ConfigStore>("create_store", { id, title, settings });
     },
     onSuccess: (_, variables) => {
-      // toast.success(`Store "${variables.name}" created successfully`);
+      // toast.success(`Store "${variables.title}" created successfully`);
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["current-store"] });
     },
     onError: (error) => {
-      toast.error(`Failed to create store: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to create store: ${errorMessage}`);
     },
   });
 };
@@ -134,7 +137,8 @@ export const useDeleteStore = () => {
       queryClient.invalidateQueries({ queryKey: ["current-store"] });
     },
     onError: (error) => {
-      toast.error(`Failed to delete store: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to delete store: ${errorMessage}`);
     },
   });
 };
@@ -151,7 +155,8 @@ export const useSetUsingStore = () => {
       queryClient.invalidateQueries({ queryKey: ["config-file", "user"] });
     },
     onError: (error) => {
-      toast.error(`Failed to switch store: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to switch store: ${errorMessage}`);
     },
   });
 };
@@ -173,10 +178,10 @@ export const useUpdateStore = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ storeId, name, settings }: { storeId: string; name: string; settings: unknown }) =>
-      invoke<ConfigStore>("update_store", { storeId, name, settings }),
+    mutationFn: ({ storeId, title, settings }: { storeId: string; title: string; settings: unknown }) =>
+      invoke<ConfigStore>("update_store", { storeId, title, settings }),
     onSuccess: (data) => {
-      toast.success(`Store "${data.name}" saved successfully`);
+      toast.success(`Store "${data.title}" saved successfully`);
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["store", data.id] });
       queryClient.invalidateQueries({ queryKey: ["current-store"] });
@@ -185,7 +190,8 @@ export const useUpdateStore = () => {
       }
     },
     onError: (error) => {
-      toast.error(`Failed to save store: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to save store: ${errorMessage}`);
     },
   });
 };

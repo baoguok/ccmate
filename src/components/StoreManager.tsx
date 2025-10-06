@@ -24,7 +24,7 @@ export function StoreManager() {
     try {
       const parsedSettings = JSON.parse(settingsContent);
       createStoreMutation.mutate({
-        name: newStoreName.trim(),
+        title: newStoreName.trim(),
         settings: parsedSettings,
       });
       setNewStoreName("");
@@ -35,7 +35,7 @@ export function StoreManager() {
   };
 
   const handleDeleteStore = (store: ConfigStore) => {
-    if (confirm(`Are you sure you want to delete the store "${store.name}"?`)) {
+    if (confirm(`Are you sure you want to delete the store "${store.title}"?`)) {
       deleteStoreMutation.mutate(store.id);
     }
   };
@@ -69,7 +69,7 @@ export function StoreManager() {
               if (storeName && storeName.trim()) {
                 // Create store with empty settings first, then navigate to edit
                 createStoreMutation.mutate({
-                  name: storeName.trim(),
+                  title: storeName.trim(),
                   settings: {},
                 });
               }
@@ -151,7 +151,7 @@ export function StoreManager() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{store.name}</span>
+                    <span className="font-medium">{store.title}</span>
                     {store.using && (
                       <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                         Current
@@ -159,7 +159,7 @@ export function StoreManager() {
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Created: {formatDate(store.created_at)}
+                    Created: {formatDate(store.createdAt)}
                   </div>
                 </div>
                 <div className="flex gap-2">

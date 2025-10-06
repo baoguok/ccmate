@@ -576,7 +576,7 @@ export function ConfigEditorPage() {
   const storeData = storeQuery.data;
 
   // Prepare default values from store data
-  const defaultValues: Record<string, any> = { configName: storeData.name };
+  const defaultValues: Record<string, any> = { configName: storeData.title };
   fields.forEach(section => {
     section.fields.forEach(field => {
       const value = get(storeData.settings, field.name);
@@ -635,7 +635,7 @@ export function ConfigEditorPage() {
     const { configName, ...rest } = convertToNestedJSON(formValues);
     updateStore.mutate({
       storeId: storeId!,
-      name: configName,
+      title: configName,
       settings: rest["settings.json"]
     });
   });

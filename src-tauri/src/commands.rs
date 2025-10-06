@@ -1,6 +1,5 @@
 use serde_json::Value;
 use std::path::PathBuf;
-use std::collections::HashMap;
 
 // Application configuration directory
 const APP_CONFIG_DIR: &str = ".ccconfig";
@@ -56,10 +55,15 @@ pub struct ConfigFile {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct ConfigStore {
     pub id: String,
-    pub name: String,
-    pub created_at: u64,
+    pub title: String,
+    pub createdAt: u64,
     pub settings: Value,
     pub using: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct StoresData {
+    pub configs: Vec<ConfigStore>,
 }
 
 #[tauri::command]
@@ -243,18 +247,18 @@ pub async fn get_stores() -> Result<Vec<ConfigStore>, String> {
     let content = std::fs::read_to_string(&stores_file)
         .map_err(|e| format!("Failed to read stores file: {}", e))?;
 
-    let stores: HashMap<String, ConfigStore> = serde_json::from_str(&content)
+    let stores_data: StoresData = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse stores file: {}", e))?;
 
-    let mut stores_vec: Vec<ConfigStore> = stores.into_values().collect();
-    // Sort by created_at in descending order (newest first)
-    stores_vec.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    let mut stores_vec = stores_data.configs;
+    // Sort by createdAt in descending order (newest first)
+    stores_vec.sort_by(|a, b| b.createdAt.cmp(&a.createdAt));
 
     Ok(stores_vec)
 }
 
 #[tauri::command]
-pub async fn create_store(id: String, name: String, settings: Value) -> Result<ConfigStore, String> {
+pub async fn create_store(id: String, title: String, settings: Value) -> Result<ConfigStore, String> {
     let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
     let app_config_path = home_dir.join(APP_CONFIG_DIR);
     let stores_file = app_config_path.join("stores.json");
@@ -264,21 +268,21 @@ pub async fn create_store(id: String, name: String, settings: Value) -> Result<C
         .map_err(|e| format!("Failed to create app config directory: {}", e))?;
 
     // Read existing stores
-    let mut stores: HashMap<String, ConfigStore> = if stores_file.exists() {
+    let mut stores_data = if stores_file.exists() {
         let content = std::fs::read_to_string(&stores_file)
             .map_err(|e| format!("Failed to read stores file: {}", e))?;
 
-        serde_json::from_str(&content)
+        serde_json::from_str::<StoresData>(&content)
             .map_err(|e| format!("Failed to parse stores file: {}", e))?
     } else {
-        HashMap::new()
+        StoresData { configs: vec![] }
     };
 
     // Create new store
     let new_store = ConfigStore {
         id: id.clone(),
-        name: name.clone(),
-        created_at: std::time::SystemTime::now()
+        title: title.clone(),
+        createdAt: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|e| format!("Failed to get timestamp: {}", e))?
             .as_secs(),
@@ -286,11 +290,11 @@ pub async fn create_store(id: String, name: String, settings: Value) -> Result<C
         using: false,
     };
 
-    // Add store to collection using ID as key
-    stores.insert(id.clone(), new_store.clone());
+    // Add store to collection
+    stores_data.configs.push(new_store.clone());
 
     // Write back to file
-    let json_content = serde_json::to_string_pretty(&stores)
+    let json_content = serde_json::to_string_pretty(&stores_data)
         .map_err(|e| format!("Failed to serialize stores: {}", e))?;
 
     std::fs::write(&stores_file, json_content)
@@ -313,19 +317,19 @@ pub async fn delete_store(store_id: String) -> Result<(), String> {
     let content = std::fs::read_to_string(&stores_file)
         .map_err(|e| format!("Failed to read stores file: {}", e))?;
 
-    let mut stores: HashMap<String, ConfigStore> = serde_json::from_str(&content)
+    let mut stores_data: StoresData = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse stores file: {}", e))?;
 
-    // Check if store exists
-    if !stores.contains_key(&store_id) {
+    // Find and remove store by ID
+    let original_len = stores_data.configs.len();
+    stores_data.configs.retain(|store| store.id != store_id);
+
+    if stores_data.configs.len() == original_len {
         return Err("Store not found".to_string());
     }
 
-    // Remove store
-    stores.remove(&store_id);
-
     // Write back to file
-    let json_content = serde_json::to_string_pretty(&stores)
+    let json_content = serde_json::to_string_pretty(&stores_data)
         .map_err(|e| format!("Failed to serialize stores: {}", e))?;
 
     std::fs::write(&stores_file, json_content)
@@ -348,25 +352,30 @@ pub async fn set_using_store(store_id: String) -> Result<(), String> {
     let content = std::fs::read_to_string(&stores_file)
         .map_err(|e| format!("Failed to read stores file: {}", e))?;
 
-    let mut stores: HashMap<String, ConfigStore> = serde_json::from_str(&content)
+    let mut stores_data: StoresData = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse stores file: {}", e))?;
 
-    // Check if store exists
-    if !stores.contains_key(&store_id) {
+    // Find the store and check if it exists
+    let store_found = stores_data.configs.iter().any(|store| store.id == store_id);
+    if !store_found {
         return Err("Store not found".to_string());
     }
 
     // Set all stores to not using, then set the selected one to using
-    for store in stores.values_mut() {
-        store.using = false;
+    let mut selected_store_settings: Option<Value> = None;
+    for store in &mut stores_data.configs {
+        if store.id == store_id {
+            store.using = true;
+            selected_store_settings = Some(store.settings.clone());
+        } else {
+            store.using = false;
+        }
     }
 
-    if let Some(store) = stores.get_mut(&store_id) {
-        store.using = true;
-
-        // Also write the store's settings to the user's actual settings.json
+    // Write the selected store's settings to the user's actual settings.json
+    if let Some(settings) = selected_store_settings {
         let user_settings_path = home_dir.join(".claude/settings.json");
-        let json_content = serde_json::to_string_pretty(&store.settings)
+        let json_content = serde_json::to_string_pretty(&settings)
             .map_err(|e| format!("Failed to serialize settings: {}", e))?;
 
         // Create .claude directory if it doesn't exist
@@ -380,7 +389,7 @@ pub async fn set_using_store(store_id: String) -> Result<(), String> {
     }
 
     // Write back to stores file
-    let json_content = serde_json::to_string_pretty(&stores)
+    let json_content = serde_json::to_string_pretty(&stores_data)
         .map_err(|e| format!("Failed to serialize stores: {}", e))?;
 
     std::fs::write(&stores_file, json_content)
@@ -405,7 +414,7 @@ pub async fn get_store(store_id: String) -> Result<ConfigStore, String> {
 }
 
 #[tauri::command]
-pub async fn update_store(store_id: String, name: String, settings: Value) -> Result<ConfigStore, String> {
+pub async fn update_store(store_id: String, title: String, settings: Value) -> Result<ConfigStore, String> {
     let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
     let app_config_path = home_dir.join(APP_CONFIG_DIR);
     let stores_file = app_config_path.join("stores.json");
@@ -418,32 +427,30 @@ pub async fn update_store(store_id: String, name: String, settings: Value) -> Re
     let content = std::fs::read_to_string(&stores_file)
         .map_err(|e| format!("Failed to read stores file: {}", e))?;
 
-    let mut stores: HashMap<String, ConfigStore> = serde_json::from_str(&content)
+    let mut stores_data: StoresData = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse stores file: {}", e))?;
 
     // Find the store by ID
-    let mut store = stores.get(&store_id)
-        .cloned()
+    let store_index = stores_data.configs.iter()
+        .position(|store| store.id == store_id)
         .ok_or_else(|| format!("Store with id '{}' not found", store_id))?;
 
-    // Check if new name conflicts with existing stores (excluding current one)
-    for existing_store in stores.values() {
-        if existing_store.id != store_id && existing_store.name == name {
-            return Err("Store with this name already exists".to_string());
+    // Check if new title conflicts with existing stores (excluding current one)
+    for existing_store in &stores_data.configs {
+        if existing_store.id != store_id && existing_store.title == title {
+            return Err("Store with this title already exists".to_string());
         }
     }
 
     // Update the store
-    store.name = name.clone();
-    store.settings = settings;
-
-    // Insert updated store (using ID as key)
-    stores.insert(store_id.clone(), store.clone());
+    let store = &mut stores_data.configs[store_index];
+    store.title = title.clone();
+    store.settings = settings.clone();
 
     // If this store is currently in use, also update the user's settings.json
     if store.using {
         let user_settings_path = home_dir.join(".claude/settings.json");
-        let json_content = serde_json::to_string_pretty(&store.settings)
+        let json_content = serde_json::to_string_pretty(&settings)
             .map_err(|e| format!("Failed to serialize settings: {}", e))?;
 
         std::fs::write(&user_settings_path, json_content)
@@ -451,11 +458,50 @@ pub async fn update_store(store_id: String, name: String, settings: Value) -> Re
     }
 
     // Write back to stores file
-    let json_content = serde_json::to_string_pretty(&stores)
+    let json_content = serde_json::to_string_pretty(&stores_data)
         .map_err(|e| format!("Failed to serialize stores: {}", e))?;
 
     std::fs::write(&stores_file, json_content)
         .map_err(|e| format!("Failed to write stores file: {}", e))?;
 
-    Ok(store)
+    Ok(stores_data.configs[store_index].clone())
+}
+
+#[tauri::command]
+pub async fn open_config_path() -> Result<(), String> {
+    let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
+    let app_config_path = home_dir.join(APP_CONFIG_DIR);
+
+    // Ensure the directory exists
+    if !app_config_path.exists() {
+        std::fs::create_dir_all(&app_config_path)
+            .map_err(|e| format!("Failed to create config directory: {}", e))?;
+    }
+
+    // Open the directory in the system's file manager
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&app_config_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open config directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&app_config_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open config directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&app_config_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open config directory: {}", e))?;
+    }
+
+    Ok(())
 }

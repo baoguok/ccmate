@@ -78,7 +78,7 @@ export function StoreEditPage() {
       const existingStore = stores.find(s => s.id === storeId);
       if (existingStore) {
         setIsExistingStore(true);
-        setStoreName(existingStore.name);
+        setStoreName(existingStore.title);
         const config = existingStore.settings as any;
 
         // Set form values from existing store
@@ -138,13 +138,13 @@ export function StoreEditPage() {
       // Update existing store
       updateStoreMutation.mutate({
         storeId,
-        name: storeName.trim(),
+        title: storeName.trim(),
         settings: finalConfig,
       });
     } else {
       // Create new store
       createStoreMutation.mutate({
-        name: storeName.trim(),
+        title: storeName.trim(),
         settings: finalConfig,
       });
     }
