@@ -273,6 +273,23 @@ export const useUpdateGlobalMcpServer = () => {
   });
 };
 
+export const useAddGlobalMcpServer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ serverName, serverConfig }: { serverName: string; serverConfig: Record<string, any> }) =>
+      invoke<void>("update_global_mcp_server", { serverName, serverConfig }),
+    onSuccess: () => {
+      toast.success("MCP server added successfully");
+      queryClient.invalidateQueries({ queryKey: ["global-mcp-servers"] });
+    },
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to add MCP server: ${errorMessage}`);
+    },
+  });
+};
+
 // Helper function to rebuild tray menu
 const rebuildTrayMenu = async () => {
   try {

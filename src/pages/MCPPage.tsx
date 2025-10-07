@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { HammerIcon, PlusIcon, SaveIcon } from "lucide-react";
 import { useGlobalMcpServers, useUpdateGlobalMcpServer, type McpServer } from "@/lib/query";
 import { toast } from "sonner";
@@ -10,6 +13,7 @@ export function MCPPage() {
   const { data: mcpServers, isLoading, error } = useGlobalMcpServers();
   const updateMcpServer = useUpdateGlobalMcpServer();
   const [serverConfigs, setServerConfigs] = useState<Record<string, string>>({});
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleConfigChange = (serverName: string, configText: string) => {
     setServerConfigs(prev => ({
@@ -33,6 +37,7 @@ export function MCPPage() {
     }
   };
 
+  
   const formatConfigForDisplay = (server: McpServer): string => {
     return JSON.stringify(server, null, 2);
   };
@@ -66,10 +71,30 @@ export function MCPPage() {
             Claude Code 全局 MCP 服务配置
           </p>
         </div>
-        <Button variant="ghost" className="text-muted-foreground" size="sm">
-          <PlusIcon size={14} />
-          添加 MCP 服务
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" className="text-muted-foreground" size="sm">
+              <PlusIcon size={14} />
+              添加 MCP 服务
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>添加新的 MCP 服务</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">添加新的 MCP 服务功能正在开发中...</p>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                关闭
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <div className="">
         {serverEntries.length === 0 ? (
