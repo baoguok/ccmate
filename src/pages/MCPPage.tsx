@@ -143,19 +143,32 @@ const builtInMcpServers = [
     name: "exa",
     source: "https://docs.exa.ai/reference/exa-mcp",
     description: "fast, efficient web context for coding agents",
-    prefill: ``
+    prefill: `"exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {}
+    }`
   },
   {
     name: "context7",
     source: "https://github.com/upstash/context7",
     description: "Up-to-date code documentation for LLMs and AI code editors",
-    prefill: ``
+    prefill: `"context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": ""
+      }
+    }`
   },
   {
     name: "github",
     source: "https://github.com/github/github-mcp-server",
     description: "GitHub's official MCP Server",
-    prefill: ``
+    prefill: `"github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    }`
   }
 ];
 
@@ -178,37 +191,12 @@ function MCPCreatePanel() {
       </div>
 
       {match(currentTab)
-        .with("recommend", ()=> {
+        .with("recommend", () => {
           return (
-            <div className="grid grid-cols-3 gap-5">
-            {builtInMcpServers.map((mcpServer) => (
-              <a role="button" key={mcpServer.name} className="border p-3 rounded-md h-[120px] flex justify-between flex-col hover:bg-primary/10 hover:border-primary/20 hover:text-primary">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-primary">{mcpServer.name}</h3>
-                  <a onClick={e => {
-                    e.stopPropagation()
-                    openUrl(mcpServer.source)
-                  }} className="text-sm text-muted-foreground flex items-center gap-1 hover:underline">
-                    <ExternalLinkIcon size={12} />
-                    Source
-                  </a>
-                </div>
-                <div>
-    
-                </div>
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">{mcpServer.description}</p>
-                  {/* <Button size="sm" variant="outline" className="w-full text-sm">
-                    <PlusIcon />
-                    添加
-                  </Button> */}
-                </div>
-              </a>
-            ))}
-          </div>
+            <RecommendMCPPanel />
           )
         })
-        .with("manual", ()=> {
+        .with("manual", () => {
           return (
             <div className="">
               <p>手动安装</p>
@@ -219,4 +207,35 @@ function MCPCreatePanel() {
       }
     </div>
   );
+}
+
+function RecommendMCPPanel() {
+  return (
+    <div className="grid grid-cols-3 gap-5">
+      {builtInMcpServers.map((mcpServer) => (
+        <a role="button" key={mcpServer.name} className="border p-3 rounded-md h-[120px] flex justify-between flex-col hover:bg-primary/10 hover:border-primary/20 hover:text-primary">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-primary">{mcpServer.name}</h3>
+            <a onClick={e => {
+              e.stopPropagation()
+              openUrl(mcpServer.source)
+            }} className="text-sm text-muted-foreground flex items-center gap-1 hover:underline">
+              <ExternalLinkIcon size={12} />
+              Source
+            </a>
+          </div>
+          <div>
+
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{mcpServer.description}</p>
+            {/* <Button size="sm" variant="outline" className="w-full text-sm">
+          <PlusIcon />
+          添加
+        </Button> */}
+          </div>
+        </a>
+      ))}
+    </div>
+  )
 }
