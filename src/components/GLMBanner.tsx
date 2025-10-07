@@ -1,9 +1,12 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { Button } from "./ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, } from "./ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
-import { ArrowRightIcon, CheckCircleIcon, CircleQuestionMarkIcon, ExternalLinkIcon, InfoIcon } from "lucide-react"
+import { CircleQuestionMarkIcon, ExternalLinkIcon } from "lucide-react"
 import { Input } from "./ui/input"
+import { useCreateConfig, useSetCurrentConfig } from "@/lib/query"
 
 export function GLMBanner() {
   return (
@@ -39,8 +42,45 @@ export function GLMBanner() {
 export function GLMDialog(props: {
   trigger: React.ReactNode
 }) {
+  const [apiKey, setApiKey] = useState("")
+  const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate()
+  const createConfigMutation = useCreateConfig()
+  const setCurrentConfigMutation = useSetCurrentConfig()
+
+  const handleCreateConfig = async () => {
+    if (!apiKey.trim()) {
+      return
+    }
+
+    try {
+      const store = await createConfigMutation.mutateAsync({
+        title: "智谱 GLM",
+        settings: {
+          env: {
+            ANTHROPIC_AUTH_TOKEN: apiKey.trim(),
+            ANTHROPIC_BASE_URL: 'https://open.bigmodel.cn/api/anthropic',
+            ANTHROPIC_MODEL: 'GLM-4.6',
+            ANTHROPIC_DEFAULT_OPUS_MODEL: 'GLM-4.6',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'GLM-4.6',
+            ANTHROPIC_DEFAULT_HAIKU_MODEL: 'GLM-4.5-Air'
+          }
+        }
+      })
+
+      // Set the newly created config as the current/active config
+      await setCurrentConfigMutation.mutateAsync(store.id)
+
+      setIsOpen(false)
+      setApiKey("")
+      navigate(`/edit/${store.id}`)
+    } catch (error) {
+      console.error("Failed to create GLM config:", error)
+    }
+  }
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {props.trigger}
       </DialogTrigger>
@@ -90,13 +130,20 @@ export function GLMDialog(props: {
                 第 3 步：输入 API Key
               </h2>
               <div className="space-y-2 bg-zinc-100 p-3 rounded-lg m-2">
-                <Input />
+                <Input
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="请输入您的 API Key"
+                />
               </div>
             </div>
 
             <div className="flex justify-end mx-2 mt-2">
-              <Button>
-                创建配置
+              <Button
+                onClick={handleCreateConfig}
+                disabled={!apiKey.trim() || createConfigMutation.isPending}
+              >
+                {createConfigMutation.isPending ? "创建中..." : "创建配置"}
               </Button>
             </div>
           </div>
