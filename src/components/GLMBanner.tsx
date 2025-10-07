@@ -1,3 +1,5 @@
+// !!!IMPORTANT: Please DO NOT localize this file
+
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { openUrl } from "@tauri-apps/plugin-opener"
