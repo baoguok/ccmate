@@ -63,9 +63,8 @@ function ConfigStores() {
         </Button>
       </div>
 
-      <div className="px-4 pt-4">
-        <GLMBanner />
-      </div>
+      <GLMBanner className="mx-4 mt-4" />
+
       <div className="grid grid-cols-3 lg:grid-cols-4 gap-3 p-4">
         {stores.map((store) => {
           const isCurrentStore = store.using

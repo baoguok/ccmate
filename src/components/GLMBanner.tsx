@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { Button } from "./ui/button"
@@ -7,10 +7,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 import { CircleQuestionMarkIcon, ExternalLinkIcon } from "lucide-react"
 import { Input } from "./ui/input"
 import { useCreateConfig, useSetCurrentConfig } from "@/lib/query"
+import { cn } from "@/lib/utils"
 
-export function GLMBanner() {
+export function GLMBanner(props: {
+  className?: string
+}) {
+  const [isDismissed, setIsDismissed] = useState(localStorage.getItem('glm-banner-dismissed') === 'true')
+
+  const handleDismiss = () => {
+    localStorage.setItem('glm-banner-dismissed', 'true')
+    setIsDismissed(true)
+  }
+
+  if (isDismissed) {
+    return null
+  }
+
   return (
-    <div className="bg-zinc-50 rounded-md p-2 border border-zinc-200 space-y-2">
+    <div className={cn("bg-zinc-50 rounded-md p-2 border border-zinc-200 space-y-2", props.className)}>
       <h3 className="text-zinc-800 text-sm font-medium flex items-center gap-2">在 Claude Code 中使用 GLM 4.6
         <TooltipProvider>
           <Tooltip delayDuration={100}>
@@ -30,8 +44,9 @@ export function GLMBanner() {
               开始配置
             </Button>
           }
+          onSuccess={handleDismiss}
         />
-        <Button size="sm" variant="ghost" className="text-sm">
+        <Button size="sm" variant="ghost" className="text-sm" onClick={handleDismiss}>
           关闭
         </Button>
       </div>
@@ -41,6 +56,7 @@ export function GLMBanner() {
 
 export function GLMDialog(props: {
   trigger: React.ReactNode
+  onSuccess?: () => void
 }) {
   const [apiKey, setApiKey] = useState("")
   const [isOpen, setIsOpen] = useState(false)
@@ -74,6 +90,9 @@ export function GLMDialog(props: {
       setIsOpen(false)
       setApiKey("")
       navigate(`/edit/${store.id}`)
+
+      // Call onSuccess callback to dismiss the banner
+      props.onSuccess?.()
     } catch (error) {
       console.error("Failed to create GLM config:", error)
     }
