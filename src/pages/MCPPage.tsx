@@ -286,7 +286,7 @@ function RecommendMCPPanel({ onClose }: { onClose?: () => void }) {
       {builtInMcpServers.map((mcpServer) => (
         <div
           key={mcpServer.name}
-          className="border p-3 rounded-md h-[120px] flex justify-between flex-col hover:bg-primary/10 hover:border-primary/20 hover:text-primary cursor-pointer"
+          className="border p-3 rounded-md h-[120px] flex justify-between flex-col hover:bg-primary/10 hover:border-primary/20 hover:text-primary cursor-default"
           onClick={() => handleAddMcpServer(mcpServer)}
         >
           <div className="flex justify-between items-center">
