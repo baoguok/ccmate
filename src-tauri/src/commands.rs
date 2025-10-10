@@ -83,6 +83,13 @@ pub struct McpServer {
 pub struct StoresData {
     pub configs: Vec<ConfigStore>,
     pub distinct_id: Option<String>,
+    pub notification: Option<NotificationSettings>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct NotificationSettings {
+    pub enable: bool,
+    pub enabled_hooks: Vec<String>,
 }
 
 #[tauri::command]
@@ -294,6 +301,10 @@ pub async fn get_stores() -> Result<Vec<ConfigStore>, String> {
             let stores_data = StoresData {
                 configs: vec![default_store.clone()],
                 distinct_id: None,
+                notification: Some(NotificationSettings {
+                    enable: true,
+                    enabled_hooks: vec!["Stop".to_string(), "PreToolUse".to_string(), "Notification".to_string()],
+                }),
             };
 
             let json_content = serde_json::to_string_pretty(&stores_data)
@@ -313,8 +324,25 @@ pub async fn get_stores() -> Result<Vec<ConfigStore>, String> {
     let content = std::fs::read_to_string(&stores_file)
         .map_err(|e| format!("Failed to read stores file: {}", e))?;
 
-    let stores_data: StoresData = serde_json::from_str(&content)
+    let mut stores_data: StoresData = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse stores file: {}", e))?;
+
+    // Add default notification settings if they don't exist
+    if stores_data.notification.is_none() {
+        stores_data.notification = Some(NotificationSettings {
+            enable: true,
+            enabled_hooks: vec!["Stop".to_string(), "PreToolUse".to_string(), "Notification".to_string()],
+        });
+
+        // Write back to stores file with notification settings added
+        let json_content = serde_json::to_string_pretty(&stores_data)
+            .map_err(|e| format!("Failed to serialize stores: {}", e))?;
+
+        std::fs::write(&stores_file, json_content)
+            .map_err(|e| format!("Failed to write stores file: {}", e))?;
+
+        println!("Added default notification settings to existing stores.json");
+    }
 
     let mut stores_vec = stores_data.configs;
     // Sort by createdAt in ascending order (oldest first)
@@ -348,6 +376,10 @@ pub async fn create_config(
         StoresData {
             configs: vec![],
             distinct_id: None,
+            notification: Some(NotificationSettings {
+                enable: true,
+                enabled_hooks: vec!["Stop".to_string(), "PreToolUse".to_string(), "Notification".to_string()],
+            }),
         }
     };
 
@@ -1142,6 +1174,10 @@ async fn get_or_create_distinct_id() -> Result<String, String> {
         StoresData {
             configs: vec![],
             distinct_id: None,
+            notification: Some(NotificationSettings {
+                enable: true,
+                enabled_hooks: vec!["Stop".to_string(), "PreToolUse".to_string(), "Notification".to_string()],
+            }),
         }
     };
 
@@ -1395,4 +1431,172 @@ pub async fn track(event: String, properties: serde_json::Value, app: tauri::App
         println!("❌ Failed to track event: {} - {}", status, error_text);
         Err(format!("PostHog API error: {} - {}", status, error_text))
     }
+}
+
+// Hook management functions
+
+#[tauri::command]
+pub async fn get_notification_settings() -> Result<Option<NotificationSettings>, String> {
+    let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
+    let app_config_path = home_dir.join(APP_CONFIG_DIR);
+    let stores_file = app_config_path.join("stores.json");
+
+    if !stores_file.exists() {
+        return Ok(None);
+    }
+
+    let content = std::fs::read_to_string(&stores_file)
+        .map_err(|e| format!("Failed to read stores file: {}", e))?;
+
+    let stores_data: StoresData = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse stores file: {}", e))?;
+
+    Ok(stores_data.notification)
+}
+
+#[tauri::command]
+pub async fn add_claude_code_hook() -> Result<(), String> {
+    let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
+    let settings_path = home_dir.join(".claude/settings.json");
+
+    // Read existing settings or create new structure
+    let mut settings = if settings_path.exists() {
+        let content = std::fs::read_to_string(&settings_path)
+            .map_err(|e| format!("Failed to read settings.json: {}", e))?;
+        serde_json::from_str(&content)
+            .map_err(|e| format!("Failed to parse settings.json: {}", e))?
+    } else {
+        serde_json::Value::Object(serde_json::Map::new())
+    };
+
+    // Ensure hooks object exists
+    let hooks_obj = settings
+        .as_object_mut()
+        .unwrap()
+        .entry("hooks".to_string())
+        .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()))
+        .as_object_mut()
+        .unwrap();
+
+    // Define the hook command
+    let hook_command = serde_json::json!({
+        "__ccmate__": true,
+        "type": "command",
+        "command": "curl -s -X POST http://localhost:59948/claude_code/hooks -H 'Content-Type: application/json' --data-binary @- 2>/dev/null || echo"
+    });
+
+    // Add hooks for Notification, Stop, and PreToolUse events
+    let events = ["Notification", "Stop", "PreToolUse"];
+
+    for event in events {
+        let event_hooks = hooks_obj
+            .entry(event.to_string())
+            .or_insert_with(|| serde_json::Value::Array(Vec::new()))
+            .as_array_mut()
+            .unwrap();
+
+        // Check if this specific hook already exists in any hooks array
+        let hook_exists = event_hooks.iter().any(|entry| {
+            if let Some(hooks_array) = entry.get("hooks").and_then(|h| h.as_array()) {
+                hooks_array.iter().any(|hook| {
+                    hook.get("__ccmate__").is_some()
+                })
+            } else {
+                false
+            }
+        });
+
+        if !hook_exists {
+            // Create the correct structure with nested hooks array
+            let ccmate_hook_entry = serde_json::json!({
+                "hooks": [hook_command]
+            });
+            event_hooks.push(ccmate_hook_entry);
+        }
+    }
+
+    // Write back to settings file
+    let json_content = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+
+    // Create .claude directory if it doesn't exist
+    if let Some(parent) = settings_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create .claude directory: {}", e))?;
+    }
+
+    std::fs::write(&settings_path, json_content)
+        .map_err(|e| format!("Failed to write settings.json: {}", e))?;
+
+    println!("✅ Claude Code hooks added successfully");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn remove_claude_code_hook() -> Result<(), String> {
+    let home_dir = dirs::home_dir().ok_or("Could not find home directory")?;
+    let settings_path = home_dir.join(".claude/settings.json");
+
+    if !settings_path.exists() {
+        return Ok(()); // Settings file doesn't exist, nothing to remove
+    }
+
+    // Read existing settings
+    let content = std::fs::read_to_string(&settings_path)
+        .map_err(|e| format!("Failed to read settings.json: {}", e))?;
+
+    let mut settings: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse settings.json: {}", e))?;
+
+    // Check if hooks object exists
+    if let Some(hooks_obj) = settings.get_mut("hooks").and_then(|h| h.as_object_mut()) {
+        let events = ["Notification", "Stop", "PreToolUse"];
+
+        for event in events {
+            if let Some(event_hooks) = hooks_obj.get_mut(event).and_then(|h| h.as_array_mut()) {
+                // Remove hooks that have __ccmate__ key from nested hooks arrays
+                let mut new_event_hooks = Vec::new();
+                for entry in event_hooks.iter() {
+                    if let Some(hooks_array) = entry.get("hooks").and_then(|h| h.as_array()) {
+                        // Filter out hooks that have __ccmate__ key
+                        let filtered_hooks: Vec<serde_json::Value> = hooks_array.iter()
+                            .filter(|hook| hook.get("__ccmate__").is_none())
+                            .cloned()
+                            .collect();
+
+                        // Keep the entry only if it still has hooks
+                        if !filtered_hooks.is_empty() {
+                            let mut new_entry = entry.clone();
+                            new_entry["hooks"] = serde_json::Value::Array(filtered_hooks);
+                            new_event_hooks.push(new_entry);
+                        }
+                    } else {
+                        // Keep entries that don't have a hooks array
+                        new_event_hooks.push(entry.clone());
+                    }
+                }
+                *event_hooks = new_event_hooks;
+
+                // If the event hooks array is empty, remove the entire event entry
+                if event_hooks.is_empty() {
+                    hooks_obj.remove(event);
+                }
+            }
+        }
+
+        // If hooks object is empty, remove it entirely
+        if hooks_obj.is_empty() {
+            settings.as_object_mut().unwrap().remove("hooks");
+        }
+    }
+
+    // Write back to settings file
+    let json_content = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+
+    std::fs::write(&settings_path, json_content)
+        .map_err(|e| format!("Failed to write settings.json: {}", e))?;
+
+    println!("✅ Claude Code hooks removed successfully");
+    Ok(())
 }

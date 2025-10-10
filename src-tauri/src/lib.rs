@@ -1,7 +1,9 @@
 mod commands;
 mod tray;
+mod hook_server;
 
 use commands::*;
+use hook_server::start_hook_server;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -141,6 +143,41 @@ pub fn run() {
                     Err(e) => eprintln!("Failed to initialize app config: {}", e),
                 }
             });
+
+            // Check notification settings and auto-register hooks if enabled
+            tauri::async_runtime::spawn(async move {
+                println!("Checking notification settings...");
+                match commands::get_notification_settings().await {
+                    Ok(Some(settings)) if settings.enable => {
+                        println!("Notifications are enabled, adding Claude Code hooks...");
+                        match commands::add_claude_code_hook().await {
+                            Ok(()) => println!("✅ Claude Code hooks auto-registered successfully"),
+                            Err(e) => eprintln!("Failed to auto-register Claude Code hooks: {}", e),
+                        }
+                    }
+                    Ok(Some(_)) => {
+                        println!("Notifications are disabled, skipping hook registration");
+                    }
+                    Ok(None) => {
+                        println!("No notification settings found, adding default hooks...");
+                        match commands::add_claude_code_hook().await {
+                            Ok(()) => println!("✅ Claude Code hooks auto-registered successfully"),
+                            Err(e) => eprintln!("Failed to auto-register Claude Code hooks: {}", e),
+                        }
+                    }
+                    Err(e) => eprintln!("Failed to get notification settings: {}", e),
+                }
+            });
+
+            // Start hook server in background
+            println!("Starting hook server...");
+            let app_handle_for_server = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                match start_hook_server(app_handle_for_server).await {
+                    Ok(()) => println!("Hook server started successfully"),
+                    Err(e) => eprintln!("Failed to start hook server: {}", e),
+                }
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -172,7 +209,10 @@ pub fn run() {
             read_project_usage_files,
             read_claude_memory,
             write_claude_memory,
-            track
+            track,
+            get_notification_settings,
+            add_claude_code_hook,
+            remove_claude_code_hook
         ])
         .on_window_event(|window, event| {
             #[cfg(target_os = "macos")]
