@@ -12,6 +12,11 @@ on:
         required: true
         type: boolean
         default: true
+      releaseBody:
+        description: 'Release notes/body'
+        required: false
+        type: string
+        default: 'See the assets to download this version and install.'
 
 # This is the example for publishing a Universal macOS app with a signing certificate.
 # On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
@@ -99,7 +104,7 @@ jobs:
           releaseCommitish: main
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "App v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseBody: ${{ inputs.releaseBody }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
