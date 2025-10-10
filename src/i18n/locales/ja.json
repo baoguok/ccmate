@@ -1,6 +1,7 @@
 {
   "app.title": "CC Mate",
   "navigation.configurations": "設定ファイル",
+  "navigation.projects": "プロジェクト",
   "navigation.mcp": "MCP",
   "navigation.usage": "使用量",
   "navigation.settings": "設定",
@@ -111,5 +112,18 @@
   "memory.title": "メモリ",
   "memory.description": "Claude Code グローバルメモリを管理",
   "memory.save": "保存",
-  "memory.saving": "保存中..."
+  "memory.saving": "保存中...",
+  "projects.title": "プロジェクト",
+  "projects.detail.editor": "プロジェクト設定エディター",
+  "projects.detail.projectEditor": "プロジェクトエディター",
+  "projects.detail.loading": "プロジェクト設定を読み込み中...",
+  "projects.detail.loadError": "設定の読み込みに失敗しました：",
+  "projects.detail.noProjectSelected": "プロジェクトが選択されていないか、設定が読み込まれていません",
+  "projects.detail.invalidJson": "JSON 形式が無効です。保存前にエラーを修正してください。",
+  "projects.detail.unsavedChanges": "保存されていない変更があります。プロジェクトを切り替える前に保存しますか？",
+  "projects.detail.projectNotFound": "パス \"{{path}}\" のプロジェクトが見つかりません。",
+  "projects.detail.backToProjects": "プロジェクトに戻る",
+  "projects.detail.save": "保存",
+  "projects.detail.saving": "保存中...",
+  "projects.detail.noProjectsMessage": "開いている Claude Code プロジェクトがありません。プロジェクトで `claude` コマンドを実行すると、プロジェクトがここに自動的に表示されます。"
 }
