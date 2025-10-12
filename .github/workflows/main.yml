@@ -88,6 +88,7 @@ jobs:
 
       - name: Get version and prepare release body
         id: release_info
+        shell: bash
         run: |
           VERSION="${{ inputs.version || '0.2.3' }}"
           CHANGELOG_FILE="changelog/${VERSION}.md"
