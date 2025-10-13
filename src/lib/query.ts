@@ -447,20 +447,7 @@ export const useUpdateNotificationSettings = () => {
   });
 };
 
-export const useSendTestNotification = () => {
-  return useMutation({
-    mutationFn: (hookType: string) => {
-      return invoke<void>("send_test_notification", { hookType });
-    },
-    onSuccess: () => {
-      toast.success(`Test notification sent`);
-    },
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to send test notification: ${errorMessage}`);
-    },
-  });
-};
+
 
 // Command management hooks
 export const useClaudeCommands = () =>
