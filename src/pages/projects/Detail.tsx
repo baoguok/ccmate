@@ -23,17 +23,18 @@ export function Detail() {
   const [hasChanges, setHasChanges] = useState(false);
   const codeMirrorTheme = useCodeMirrorTheme();
 
-  // Update JSON content when project data loads
+  // Update JSON content when project data loads or path changes
   useEffect(() => {
-    if (path && projects && !hasChanges && !isLoadingProjects && !isLoadingConfig) {
+    if (path && projects && !isLoadingProjects && !isLoadingConfig) {
       const decodedPath = decodeURIComponent(path);
       const project = projects.find(p => p.path === decodedPath);
 
       if (project) {
         setJsonContent(JSON.stringify(project.config, null, 2));
+        setHasChanges(false);
       }
     }
-  }, [path, projects, hasChanges, isLoadingProjects, isLoadingConfig]);
+  }, [path, projects, isLoadingProjects, isLoadingConfig]);
 
   const handleSave = useCallback(() => {
     try {
