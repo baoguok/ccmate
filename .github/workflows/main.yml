@@ -126,3 +126,16 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  notify-build-success:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    if: ${{ success() }}
+    steps:
+      - name: Send build success notification
+        run: |
+          curl \
+            -H "Title: CC Mate build finished" \
+            -H "Tags: ccmate,github_action" \
+            -d "✅  CC Mate build has finished. Ready to release." \
+            https://ntfy.sh/randyloop
