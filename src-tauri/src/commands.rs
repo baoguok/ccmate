@@ -69,7 +69,8 @@ pub struct ConfigFile {
 pub struct ConfigStore {
     pub id: String,
     pub title: String,
-    pub createdAt: u64,
+    #[serde(rename = "createdAt")]
+    pub created_at: u64,
     pub settings: Value,
     pub using: bool,
 }
@@ -299,7 +300,7 @@ pub async fn get_stores() -> Result<Vec<ConfigStore>, String> {
 
     let mut stores_vec = stores_data.configs;
     // Sort by createdAt in ascending order (oldest first)
-    stores_vec.sort_by(|a, b| a.createdAt.cmp(&b.createdAt));
+    stores_vec.sort_by(|a, b| a.created_at.cmp(&b.created_at));
 
     Ok(stores_vec)
 }
@@ -354,7 +355,7 @@ pub async fn create_config(
             let original_store = ConfigStore {
                 id: nanoid::nanoid!(6), // Generate a 6-character ID
                 title: "Original Config".to_string(),
-                createdAt: std::time::SystemTime::now()
+                created_at: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map_err(|e| format!("Failed to get timestamp: {}", e))?
                     .as_secs(),
@@ -416,7 +417,7 @@ pub async fn create_config(
     let new_store = ConfigStore {
         id: id.clone(),
         title: title.clone(),
-        createdAt: std::time::SystemTime::now()
+        created_at: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|e| format!("Failed to get timestamp: {}", e))?
             .as_secs(),

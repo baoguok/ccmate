@@ -8,7 +8,6 @@ import {
 	FolderIcon,
 	SettingsIcon,
 	TerminalIcon,
-	UserIcon,
 } from "lucide-react";
 import type React from "react";
 import { useTranslation } from "react-i18next";
@@ -16,7 +15,6 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { cn, isMacOS } from "../lib/utils";
 import { UpdateButton } from "./UpdateButton";
 import { ScrollArea } from "./ui/scroll-area";
-import { version } from "@tauri-apps/plugin-os";
 import { getVersion } from "@tauri-apps/api/app";
 
 export function Layout() {
