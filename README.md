@@ -25,7 +25,7 @@
 - **🤖 Agent Management** - Manage Claude Code agents and their settings
 - **📋 Global Commands** - Configure and organize global commands
 - **📝 CLAUDE.md Integration** - Read and write global CLAUDE.md memory files
-- **🔔 Notifications** -
+- **🔔 Notifications**
 - **📊 Usage Analytics** - Track and analyze your Claude Code usage
 
 ## 🚀 Quick Start
@@ -38,40 +38,6 @@
    - **Windows**: Download the `.exe` installer and run it
    - **Linux**: Download the `.AppImage` or `.deb` package
 3. **Launch CC Mate** from your applications folder
-
-### First Run
-
-On first launch, CC Mate automatically:
-- Creates backups of existing Claude configurations in `~/.ccconfig/claude_backup/`
-- Detects and loads available configuration files
-- Sets up the default workspace
-
-## 📁 Configuration Files
-
-CC Mate manages several types of configuration files:
-
-### User Configuration
-- Location: `~/.claude/settings.json`
-- Purpose: Personal Claude Code settings and preferences
-
-### Enterprise Configuration
-- Location: Varies by platform
-- Purpose: Organization-wide managed settings
-- Access: Read-only for security
-
-### MCP Configuration
-- Location: Varies by platform
-- Purpose: Model Context Protocol server settings
-- Access: Full management capabilities
-
-## 🏗️ Architecture
-
-Built with modern technologies:
-
-- **Frontend**: React 19 with TypeScript, Tailwind CSS, and shadcn/ui
-- **Backend**: Rust with Tauri v2 for secure cross-platform desktop apps
-- **Editor**: CodeMirror for syntax-highlighted code editing
-- **State Management**: React Query for data fetching and caching
 
 ## 🤝 Contributing
 

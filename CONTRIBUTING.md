@@ -57,19 +57,6 @@ pnpm tauri dev
 pnpm dev
 ```
 
-### Production
-
-```bash
-# Build for production
-pnpm build
-
-# Build platform-specific releases
-pnpm tauri build
-
-# Preview built app
-pnpm preview
-```
-
 ### Code Quality
 
 ```bash
@@ -84,70 +71,6 @@ pnpm tsc --noEmit
 ```
 
 ## 📋 Development Guidelines
-
-### Code Style
-
-#### Frontend (React/TypeScript)
-
-- Use functional components and hooks
-- Follow React best practices and patterns
-- Use TypeScript strictly - avoid `any` types
-- Place React Query logic in `src/lib/query.ts` by default
-- Use `pnpm tsc --noEmit` to check for TypeScript errors
-- Don't use `export default` for components
-- Keep components in single files unless explicitly requested
-
-#### Backend (Rust)
-
-- Follow Rust idioms and conventions
-- Use async/await patterns for file operations
-- Write Tauri commands in `src-tauri/src/commands.rs` with descriptive names
-- Handle errors properly and provide meaningful error messages
-- Use proper type definitions for all data structures
-
-### File Organization
-
-- **Components**: Keep components focused and single-purpose
-- **Hooks**: Custom hooks go in `src/lib/` or component-specific files
-- **Utilities**: Shared utilities in `src/lib/utils.ts`
-- **Types**: TypeScript types should be co-located with their usage
-- **Commands**: Tauri commands in `src-tauri/src/commands.rs`
-
-### Dependencies
-
-- **Package Manager**: Always use `pnpm` (not `npm` or `yarn`)
-- **New Dependencies**: Consider the bundle size and security implications
-- **UI Components**: Prefer shadcn/ui components when available
-- **Library Installation**: Use `pnpm dlx shadcn@latest add [component]` for shadcn components
-
-## 🧪 Testing
-
-### Manual Testing
-
-1. **Configuration Management**
-   - Test loading different config types (user, enterprise, MCP)
-   - Test JSON validation and error handling
-   - Test saving and reverting changes
-
-2. **UI/UX**
-   - Test on different screen sizes and resolutions
-   - Test dark/light mode switching
-   - Test keyboard navigation and accessibility
-
-3. **Platform Testing**
-   - Test on your target platform(s)
-   - Verify file permissions and access
-   - Test app startup and shutdown
-
-### TypeScript Validation
-
-Always run TypeScript checking before committing:
-
-```bash
-pnpm tsc --noEmit
-```
-
-This catches type errors and ensures code quality without starting the full dev server.
 
 ## 🔄 Development Workflow
 
@@ -223,16 +146,6 @@ When requesting features:
 - **Proposed solution**: How should it work?
 - **Alternatives considered**: What other approaches did you think about?
 - **Additional context**: Any other relevant information
-
-## 📚 Learning Resources
-
-If you're new to the technologies we use:
-
-- [Tauri Documentation](https://tauri.app/v1/guides/)
-- [React Documentation](https://react.dev/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-- [shadcn/ui Components](https://ui.shadcn.com/)
 
 ## 🤝 Getting Help
 
