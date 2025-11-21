@@ -6,7 +6,7 @@
 
 [Download Latest Release](https://randynamic.org/ccmate) • [Report Issues](https://github.com/djyde/ccconfig/issues) • [Contributing Guide](CONTRIBUTING.md)
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0) [![Homebrew](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/djyde/ccmate/main/Casks/ccmate.rb&query=$.version&label=homebrew&color=blue)](https://github.com/djyde/ccmate)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0) [![Homebrew](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/djyde/brew/main/Casks/ccmate.rb&query=$.version&label=homebrew&color=blue)](https://github.com/djyde/brew)
 
 </div>
 
@@ -45,11 +45,11 @@ Want to become a sponsor? Contact https://x.com/randyloop
 
 ```bash
 # Add the tap and install CC Mate
-brew tap djyde/ccmate
+brew tap djyde/brew
 brew install --cask ccmate
 
 # Or install in one command
-brew install --cask djyde/ccmate/ccmate
+brew install --cask djyde/brew/ccmate
 ```
 
 ### Download & Install
